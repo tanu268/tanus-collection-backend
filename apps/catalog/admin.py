@@ -1,0 +1,46 @@
+from django.contrib import admin
+from django.utils.html import format_html
+from .models import Category, Product, ProductImage
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "created_at")
+    search_fields = ("name",)
+    ordering = ("name",)
+
+
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+    fields = ("image_preview", "image", "is_primary")
+    readonly_fields = ("image_preview",)
+
+    def image_preview(self, obj):
+        if obj.pk and obj.image:
+            return format_html('<img src="{}" style="height: 60px;" />', obj.image.url)
+        return "(no image yet)"
+    image_preview.short_description = "Preview"
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = (
+        "product_code", "name", "category",
+        "price", "quantity", "status", "is_featured",
+    )
+    list_filter = ("status", "category", "fabric", "color", "is_featured")
+    search_fields = ("product_code", "name")
+    ordering = ("-created_at",)
+    inlines = [ProductImageInline]
+    actions = ["mark_as_hidden", "mark_as_published"]
+
+    @admin.action(description="Mark selected products as Hidden")
+    def mark_as_hidden(self, request, queryset):
+        updated = queryset.update(status=Product.Status.HIDDEN)
+        self.message_user(request, f"{updated} product(s) marked as Hidden.")
+
+    @admin.action(description="Mark selected products as Published")
+    def mark_as_published(self, request, queryset):
+        updated = queryset.update(status=Product.Status.PUBLISHED)
+        self.message_user(request, f"{updated} product(s) marked as Published.")
