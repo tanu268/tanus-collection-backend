@@ -57,6 +57,9 @@ class Product(TimeStampedModel):
         GREY = "grey", "Grey"
         MULTICOLOR = "multicolor", "Multicolor"
 
+    objects = ProductQuerySet.as_manager()
+
+
     category = models.ForeignKey(
         "Category",
         on_delete=models.PROTECT,

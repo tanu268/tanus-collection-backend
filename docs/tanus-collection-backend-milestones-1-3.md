@@ -241,3 +241,5 @@ ActivityLog
 
 ## Next: Milestone 4 — Django Models
 Translate the schema above into actual `models.py` files across `catalog`, `inquiries`, and `activity_log` apps — field types, `Meta` classes, indexes, `__str__` methods, and slug auto-generation logic.
+
+
