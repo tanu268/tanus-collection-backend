@@ -37,10 +37,19 @@ class ProductAdmin(admin.ModelAdmin):
 
     @admin.action(description="Mark selected products as Hidden")
     def mark_as_hidden(self, request, queryset):
-        updated = queryset.update(status=Product.Status.HIDDEN)
-        self.message_user(request, f"{updated} product(s) marked as Hidden.")
+        count = 0
+        for product in queryset:
+            product.status = Product.Status.HIDDEN
+            product.save()
+            count += 1
+        self.message_user(request, f"{count} product(s) marked as Hidden.")
+
 
     @admin.action(description="Mark selected products as Published")
     def mark_as_published(self, request, queryset):
-        updated = queryset.update(status=Product.Status.PUBLISHED)
-        self.message_user(request, f"{updated} product(s) marked as Published.")
+        count = 0
+        for product in queryset:
+            product.status = Product.Status.PUBLISHED
+            product.save()
+            count += 1
+        self.message_user(request, f"{count} product(s) marked as Published.")

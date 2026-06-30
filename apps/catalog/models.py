@@ -21,6 +21,10 @@ class Category(TimeStampedModel):
         super().save(*args, **kwargs)
 
 
+class ProductQuerySet(models.QuerySet):
+    def public(self):
+        return self.filter(status=Product.Status.PUBLISHED)
+
 class Product(TimeStampedModel):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
@@ -97,6 +101,10 @@ class Product(TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(f"{self.name}-{self.product_code}")
+
+        from .services import sync_status_with_quantity
+        sync_status_with_quantity(self)
+
         super().save(*args, **kwargs)
 
 class ProductImage(TimeStampedModel):
@@ -113,3 +121,4 @@ class ProductImage(TimeStampedModel):
 
     def __str__(self):
         return f"Image for {self.product.product_code} ({'primary' if self.is_primary else 'secondary'})"
+
