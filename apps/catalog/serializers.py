@@ -19,6 +19,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 class ProductListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
+    fabric_display = serializers.CharField(source="get_fabric_display", read_only=True)
     color_display = serializers.CharField(source="get_color_display", read_only=True)
     thumbnail = serializers.SerializerMethodField()
 
@@ -27,16 +28,16 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             "id", "slug", "name", "category",
             "price", "discount_price",
+            "fabric", "fabric_display",
             "color", "color_display",
             "is_featured", "thumbnail", "created_at",
         ]
 
     def get_thumbnail(self, obj):
-        primary = obj.images.first()  # Meta.ordering already puts primary first
+        primary = obj.images.first()
         if primary:
             return primary.image.url
         return None
-
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
