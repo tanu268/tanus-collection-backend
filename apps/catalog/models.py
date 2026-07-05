@@ -7,6 +7,8 @@ from apps.core.models import TimeStampedModel
 class Category(TimeStampedModel):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
+    image = models.ImageField(upload_to="categories/", blank=True, null=True)
+    blurb = models.TextField(blank=True)
 
     class Meta:
         verbose_name_plural = "Categories"

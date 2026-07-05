@@ -2,12 +2,12 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import Category, Product, ProductImage
 
-
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "created_at")
     search_fields = ("name",)
     ordering = ("name",)
+    fields = ("name", "slug", "image", "blurb")
 
 
 class ProductImageInline(admin.TabularInline):

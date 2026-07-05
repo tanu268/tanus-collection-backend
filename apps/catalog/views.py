@@ -5,10 +5,13 @@ from django_filters import rest_framework as django_filters
 
 from .models import Category, Product
 
+from rest_framework.parsers import MultiPartParser, FormParser
+
 from rest_framework import viewsets, permissions
 from .serializers import ProductAdminSerializer
 from .serializers import (
     CategorySerializer,
+    CategoryAdminSerializer,
     ProductListSerializer,
     ProductDetailSerializer,
 )
@@ -95,3 +98,9 @@ class AdminDashboardView(APIView):
             ).data,
         }
         return Response(data)
+
+class CategoryAdminViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategoryAdminSerializer
+    permission_classes = [permissions.IsAdminUser]
+    parser_classes = [MultiPartParser, FormParser]  # for image upload

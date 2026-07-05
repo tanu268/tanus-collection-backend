@@ -6,13 +6,14 @@ from .views import (
     ProductDetailView,
     CategoryListView,
     CategoryDetailView,
+    CategoryAdminViewSet,
     ProductAdminViewSet,
     AdminDashboardView,
 )
 
 router = DefaultRouter()
 router.register("admin/products", ProductAdminViewSet, basename="admin-product")
-
+router.register("admin/categories", CategoryAdminViewSet, basename="admin-category")
 
 urlpatterns = [
     path("products/", ProductListView.as_view(), name="product-list"),

@@ -10,11 +10,26 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
-    url = serializers.ImageField(source="image", read_only=True)
+    url = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductImage
         fields = ["url", "is_primary"]
+
+    def get_url(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return obj.image.url if obj.image else None
+
+
+def _thumbnail_url(obj, context):
+    """Shared helper: build an absolute thumbnail URL from a product's first image."""
+    primary = obj.images.first()
+    if not primary:
+        return None
+    request = context.get("request")
+    return request.build_absolute_uri(primary.image.url) if request else primary.image.url
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -34,10 +49,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_thumbnail(self, obj):
-        primary = obj.images.first()
-        if primary:
-            return primary.image.url
-        return None
+        return _thumbnail_url(obj, self.context)
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
@@ -62,7 +75,14 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_is_available(self, obj):
         return obj.status == Product.Status.PUBLISHED
 
+
 class ProductAdminSerializer(serializers.ModelSerializer):
+    images = ProductImageSerializer(many=True, read_only=True)
+    thumbnail = serializers.SerializerMethodField()
+    uploaded_images = serializers.ListField(
+        child=serializers.ImageField(), write_only=True, required=False
+    )
+
     class Meta:
         model = Product
         fields = [
@@ -70,6 +90,44 @@ class ProductAdminSerializer(serializers.ModelSerializer):
             "price", "discount_price", "quantity",
             "fabric", "color", "border_color",
             "status", "is_featured",
+            "images", "thumbnail", "uploaded_images",
             "created_at", "updated_at",
         ]
         read_only_fields = ["slug", "created_at", "updated_at"]
+
+    def get_thumbnail(self, obj):
+        return _thumbnail_url(obj, self.context)
+
+    def create(self, validated_data):
+        uploaded_images = validated_data.pop("uploaded_images", [])
+        product = super().create(validated_data)
+        for index, image_file in enumerate(uploaded_images):
+            ProductImage.objects.create(
+                product=product,
+                image=image_file,
+                is_primary=(index == 0),
+            )
+        return product
+
+    def update(self, instance, validated_data):
+        uploaded_images = validated_data.pop("uploaded_images", [])
+        product = super().update(instance, validated_data)
+        for index, image_file in enumerate(uploaded_images):
+            ProductImage.objects.create(
+                product=product,
+                image=image_file,
+                is_primary=(index == 0 and not product.images.exists()),
+            )
+        return product
+
+
+class CategoryAdminSerializer(serializers.ModelSerializer):
+    product_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ["id", "name", "slug", "image", "blurb", "product_count", "created_at"]
+        read_only_fields = ["slug", "created_at"]
+
+    def get_product_count(self, obj):
+        return obj.products.count()
