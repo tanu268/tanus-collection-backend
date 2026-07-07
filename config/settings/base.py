@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     "apps.inquiries",
     "apps.activity_log",
     "apps.accounts", 
-    
+    "apps.gallery",
 ]
 
 MIDDLEWARE = [

@@ -19,6 +19,8 @@ from .serializers import (
 from rest_framework.views import APIView
 from apps.activity_log.models import ActivityLog
 from apps.activity_log.serializers import ActivityLogSerializer
+from apps.inquiries.models import Inquiry
+from apps.inquiries.serializers import InquirySerializer
 
 
 class ProductFilter(django_filters.FilterSet):
@@ -85,6 +87,11 @@ class AdminDashboardView(APIView):
 
     def get(self, request):
         products = Product.objects.all()
+        open_inquiries = Inquiry.objects.exclude(status=Inquiry.Status.CLOSED)
+        indicative_revenue = sum(
+            (inq.product.price for inq in open_inquiries.select_related("product")),
+            0,
+        )
         data = {
             "total_products": products.count(),
             "available_products": products.filter(status=Product.Status.PUBLISHED).count(),
@@ -93,6 +100,17 @@ class AdminDashboardView(APIView):
             "draft_products": products.filter(status=Product.Status.DRAFT).count(),
             "archived_products": products.filter(status=Product.Status.ARCHIVED).count(),
             "featured_products": products.filter(is_featured=True).count(),
+            "total_categories": Category.objects.count(),
+            "open_inquiries": open_inquiries.count(),
+            "indicative_revenue": indicative_revenue,
+            "recent_inquiries": InquirySerializer(
+                Inquiry.objects.all().select_related("product", "customer")[:5],
+                many=True, context={"request": request},
+            ).data,
+            "recent_products": ProductAdminSerializer(
+                products.select_related("category").prefetch_related("images").order_by("-created_at")[:5],
+                many=True, context={"request": request},
+            ).data,
             "recent_activity": ActivityLogSerializer(
                 ActivityLog.objects.all()[:5], many=True
             ).data,

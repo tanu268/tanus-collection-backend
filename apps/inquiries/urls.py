@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     InquiryCartListView, InquiryCartAddView, InquiryCartRemoveView,
     InquiryCartClearView, InquirySubmitView, InquiryAdminListView,
-    InquiryAdminStatusUpdateView,
+    InquiryAdminStatusUpdateView, InquiryAnalyticsByCategoryView,
 )
 
 urlpatterns = [
@@ -14,4 +14,5 @@ urlpatterns = [
 
     path("admin/inquiries/", InquiryAdminListView.as_view(), name="admin-inquiry-list"),
     path("admin/inquiries/<int:pk>/status/", InquiryAdminStatusUpdateView.as_view(), name="admin-inquiry-status"),
+    path("admin/analytics/inquiries-by-category/", InquiryAnalyticsByCategoryView.as_view(), name="admin-analytics-inquiries-by-category"),
 ]

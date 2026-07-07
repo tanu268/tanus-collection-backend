@@ -1,6 +1,9 @@
 import uuid
+from datetime import timedelta
 
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -114,3 +117,22 @@ class InquiryAdminStatusUpdateView(APIView):
         inquiry.status = status_value
         inquiry.save(update_fields=["status"])
         return Response(InquirySerializer(inquiry).data)
+
+
+class InquiryAnalyticsByCategoryView(APIView):
+    """Admin: count of inquiries per product category, last 30 days."""
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        since = timezone.now() - timedelta(days=30)
+        rows = (
+            Inquiry.objects.filter(created_at__gte=since)
+            .values("product__category__name")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+        data = [
+            {"category": row["product__category__name"] or "Uncategorized", "count": row["count"]}
+            for row in rows
+        ]
+        return Response(data)

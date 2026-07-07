@@ -22,11 +22,13 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/", include("apps.core.urls")),
     path("api/", include("apps.accounts.urls")), 
     path("api/", include("apps.catalog.urls")),
     path("api/", include("apps.inquiries.urls")),
     path("api/", include("apps.activity_log.urls")),
     path('api/admin/login/', views.obtain_auth_token, name='api_login'),
+    path("api/", include("apps.gallery.urls")),
 ]
 
 if settings.DEBUG:

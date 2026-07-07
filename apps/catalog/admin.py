@@ -8,6 +8,7 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ("name",)
     ordering = ("name",)
     fields = ("name", "slug", "image", "blurb")
+    prepopulated_fields = {"slug": ("name",)}
 
 
 class ProductImageInline(admin.TabularInline):
