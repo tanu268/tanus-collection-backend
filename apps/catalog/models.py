@@ -62,10 +62,10 @@ class Product(TimeStampedModel):
     objects = ProductQuerySet.as_manager()
 
 
-    category = models.ForeignKey(
+    categories = models.ManyToManyField(
         "Category",
-        on_delete=models.PROTECT,
         related_name="products",
+        blank=False,
     )
     product_code = models.CharField(max_length=30, unique=True, db_index=True)
     name = models.CharField(max_length=200, db_index=True)

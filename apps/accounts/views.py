@@ -66,8 +66,8 @@ class WishlistListView(generics.ListAPIView):
     def get_queryset(self):
         return (
             WishlistItem.objects.filter(user=self.request.user)
-            .select_related("product", "product__category")
-            .prefetch_related("product__images")
+            .select_related("product")
+            .prefetch_related("product__categories", "product__images")
         )
 
 

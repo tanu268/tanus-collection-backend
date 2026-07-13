@@ -4,9 +4,17 @@ from .models import Category, Product, ProductImage
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        fields = ["id", "name", "slug"]
+        fields = ["id", "name", "slug", "image", "blurb"]
+
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return obj.image.url if obj.image else None
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -76,7 +84,17 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return obj.status == Product.Status.PUBLISHED
 
 
+class WritableCategoryField(serializers.PrimaryKeyRelatedField):
+    """Accepts a category id on write, but serializes the full nested
+    Category object on read — the admin UI reads fields like
+    `product.category.name` directly."""
+
+    def to_representation(self, value):
+        return CategorySerializer(value, context=self.context).data
+
+
 class ProductAdminSerializer(serializers.ModelSerializer):
+    category = WritableCategoryField(queryset=Category.objects.all())
     images = ProductImageSerializer(many=True, read_only=True)
     thumbnail = serializers.SerializerMethodField()
     uploaded_images = serializers.ListField(

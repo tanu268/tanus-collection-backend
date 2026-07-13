@@ -26,12 +26,15 @@ from apps.inquiries.serializers import InquirySerializer
 class ProductFilter(django_filters.FilterSet):
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
-    category = django_filters.CharFilter(field_name="category__slug")
+    category = django_filters.CharFilter(method="filter_category")
     featured = django_filters.BooleanFilter(field_name="is_featured")
 
     class Meta:
         model = Product
         fields = ["fabric", "color", "category", "featured", "min_price", "max_price"]
+
+    def filter_category(self, queryset, name, value):
+        return queryset.filter(categories__slug=value).distinct()
 
 
 class ProductListView(generics.ListAPIView):
@@ -43,7 +46,7 @@ class ProductListView(generics.ListAPIView):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        return Product.objects.public().select_related("category").prefetch_related("images")
+        return Product.objects.public().prefetch_related("categories", "images")
 
 
 class ProductDetailView(generics.RetrieveAPIView):
@@ -51,7 +54,7 @@ class ProductDetailView(generics.RetrieveAPIView):
     lookup_field = "slug"
 
     def get_queryset(self):
-        return Product.objects.public().select_related("category").prefetch_related("images")
+        return Product.objects.public().prefetch_related("categories", "images")
 
 
 class CategoryListView(generics.ListAPIView):
@@ -70,9 +73,9 @@ class CategoryDetailView(generics.RetrieveAPIView):
 class ProductAdminViewSet(viewsets.ModelViewSet):
     serializer_class = ProductAdminSerializer
     permission_classes = [permissions.IsAdminUser]
-    queryset = Product.objects.all().select_related("category").prefetch_related("images")
+    queryset = Product.objects.all().prefetch_related("categories", "images")
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["status", "category", "fabric", "color", "is_featured"]
+    filterset_fields = ["status", "categories", "fabric", "color", "is_featured"]
     search_fields = ["name", "product_code"]
     ordering_fields = ["price", "created_at", "name", "quantity"]
 
@@ -108,7 +111,7 @@ class AdminDashboardView(APIView):
                 many=True, context={"request": request},
             ).data,
             "recent_products": ProductAdminSerializer(
-                products.select_related("category").prefetch_related("images").order_by("-created_at")[:5],
+                products.prefetch_related("categories", "images").order_by("-created_at")[:5],
                 many=True, context={"request": request},
             ).data,
             "recent_activity": ActivityLogSerializer(

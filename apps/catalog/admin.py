@@ -27,14 +27,19 @@ class ProductImageInline(admin.TabularInline):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
-        "product_code", "name", "category",
+        "product_code", "name", "category_list",
         "price", "quantity", "status", "is_featured",
     )
-    list_filter = ("status", "category", "fabric", "color", "is_featured")
+    list_filter = ("status", "categories", "fabric", "color", "is_featured")
     search_fields = ("product_code", "name")
     ordering = ("-created_at",)
+    filter_horizontal = ("categories",)
     inlines = [ProductImageInline]
     actions = ["mark_as_hidden", "mark_as_published"]
+
+    @admin.display(description="Categories")
+    def category_list(self, obj):
+        return ", ".join(c.name for c in obj.categories.all())
 
     @admin.action(description="Mark selected products as Hidden")
     def mark_as_hidden(self, request, queryset):

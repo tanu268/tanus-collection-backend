@@ -25,8 +25,8 @@ class InquiryCartListView(generics.ListAPIView):
     def get_queryset(self):
         return (
             InquiryCartItem.objects.filter(user=self.request.user)
-            .select_related("product", "product__category")
-            .prefetch_related("product__images")
+            .select_related("product")
+            .prefetch_related("product__categories", "product__images")
         )
 
 
@@ -127,12 +127,12 @@ class InquiryAnalyticsByCategoryView(APIView):
         since = timezone.now() - timedelta(days=30)
         rows = (
             Inquiry.objects.filter(created_at__gte=since)
-            .values("product__category__name")
+            .values("product__categories__name")
             .annotate(count=Count("id"))
             .order_by("-count")
         )
         data = [
-            {"category": row["product__category__name"] or "Uncategorized", "count": row["count"]}
+            {"category": row["product__categories__name"] or "Uncategorized", "count": row["count"]}
             for row in rows
         ]
         return Response(data)
