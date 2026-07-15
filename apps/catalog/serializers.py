@@ -41,7 +41,7 @@ def _thumbnail_url(obj, context):
 
 
 class ProductListSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
     fabric_display = serializers.CharField(source="get_fabric_display", read_only=True)
     color_display = serializers.CharField(source="get_color_display", read_only=True)
     thumbnail = serializers.SerializerMethodField()
@@ -49,7 +49,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id", "slug", "name", "category",
+            "id", "slug", "name", "categories",
             "price", "discount_price",
             "fabric", "fabric_display",
             "color", "color_display",
@@ -61,7 +61,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
     fabric_display = serializers.CharField(source="get_fabric_display", read_only=True)
     color_display = serializers.CharField(source="get_color_display", read_only=True)
     border_color_display = serializers.CharField(source="get_border_color_display", read_only=True)
@@ -71,7 +71,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id", "slug", "product_code", "name", "category", "description",
+            "id", "slug", "product_code", "name", "categories", "description",
             "price", "discount_price",
             "fabric", "fabric_display",
             "color", "color_display",
@@ -85,16 +85,16 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
 
 class WritableCategoryField(serializers.PrimaryKeyRelatedField):
-    """Accepts a category id on write, but serializes the full nested
-    Category object on read — the admin UI reads fields like
-    `product.category.name` directly."""
+    """Accepts category ids on write, but serializes the full nested
+    Category objects on read — the admin UI reads fields like
+    `product.categories[].name` directly."""
 
     def to_representation(self, value):
         return CategorySerializer(value, context=self.context).data
 
 
 class ProductAdminSerializer(serializers.ModelSerializer):
-    category = WritableCategoryField(queryset=Category.objects.all())
+    categories = WritableCategoryField(many=True, queryset=Category.objects.all())
     images = ProductImageSerializer(many=True, read_only=True)
     thumbnail = serializers.SerializerMethodField()
     uploaded_images = serializers.ListField(
@@ -104,7 +104,7 @@ class ProductAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id", "slug", "product_code", "name", "category", "description",
+            "id", "slug", "product_code", "name", "categories", "description",
             "price", "discount_price", "quantity",
             "fabric", "color", "border_color",
             "status", "is_featured",
