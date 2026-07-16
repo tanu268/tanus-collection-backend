@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.core.models import TimeStampedModel
@@ -42,23 +43,6 @@ class Product(TimeStampedModel):
         CHIFFON = "chiffon", "Chiffon"
         # add more as the business needs them
 
-    class Color(models.TextChoices):
-        RED = "red", "Red"
-        MAROON = "maroon", "Maroon"
-        PINK = "pink", "Pink"
-        ORANGE = "orange", "Orange"
-        YELLOW = "yellow", "Yellow"
-        GOLD = "gold", "Gold"
-        GREEN = "green", "Green"
-        BLUE = "blue", "Blue"
-        NAVY_BLUE = "navy_blue", "Navy Blue"
-        PURPLE = "purple", "Purple"
-        BLACK = "black", "Black"
-        WHITE = "white", "White"
-        CREAM = "cream", "Cream"
-        GREY = "grey", "Grey"
-        MULTICOLOR = "multicolor", "Multicolor"
-
     objects = ProductQuerySet.as_manager()
 
 
@@ -76,17 +60,22 @@ class Product(TimeStampedModel):
     discount_price = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True
     )
+    # Optional sale window. If left blank, a discount_price is treated as
+    # active immediately / indefinitely on that side of the range.
+    discount_starts_on = models.DateField(null=True, blank=True)
+    discount_ends_on = models.DateField(null=True, blank=True)
 
     quantity = models.PositiveIntegerField(default=0)
 
     fabric = models.CharField(
         max_length=20, choices=Fabric.choices, db_index=True
     )
-    color = models.CharField(
-        max_length=20, choices=Color.choices, db_index=True
-    )
+    # Free-text so multi-word/custom color names (e.g. "Rama Green",
+    # "Peacock Blue") are accepted — this used to be a hardcoded
+    # TextChoices enum, which silently rejected anything not in the list.
+    color = models.CharField(max_length=50, db_index=True)
     border_color = models.CharField(
-        max_length=20, choices=Color.choices, blank=True, null=True
+        max_length=50, blank=True, null=True
     )
 
     status = models.CharField(
@@ -102,6 +91,20 @@ class Product(TimeStampedModel):
 
     def __str__(self):
         return f"{self.product_code} — {self.name}"
+
+    @property
+    def is_discount_active(self):
+        """True when there's a discount_price and today falls inside the
+        optional [discount_starts_on, discount_ends_on] window (either or
+        both bounds may be blank, meaning "no limit" on that side)."""
+        if not self.discount_price:
+            return False
+        today = timezone.localdate()
+        if self.discount_starts_on and today < self.discount_starts_on:
+            return False
+        if self.discount_ends_on and today > self.discount_ends_on:
+            return False
+        return True
 
     def save(self, *args, **kwargs):
         if not self.slug:
