@@ -79,7 +79,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True, read_only=True)
     fabric_display = serializers.CharField(source="get_fabric_display", read_only=True)
     color_display = serializers.CharField(source="color", read_only=True)
-    border_color_display = serializers.CharField(source="border_color", read_only=True)
+    border_color_display = serializers.SerializerMethodField()
     images = ProductImageSerializer(many=True, read_only=True)
     is_available = serializers.SerializerMethodField()
     discount_price = serializers.SerializerMethodField()
@@ -99,6 +99,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_is_available(self, obj):
         return obj.status == Product.Status.PUBLISHED
+
+    def get_border_color_display(self, obj):
+        return obj.border_color or None
 
     def get_discount_price(self, obj):
         return _active_discount_price(obj)

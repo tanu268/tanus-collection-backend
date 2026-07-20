@@ -92,7 +92,7 @@ class InquirySubmitView(APIView):
         InquiryCartItem.objects.filter(user=request.user).delete()
 
         return Response(
-            InquirySerializer(Inquiry.objects.filter(batch_id=batch_id), many=True).data,
+            InquirySerializer(created, many=True, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
         )
 
