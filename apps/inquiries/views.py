@@ -71,10 +71,22 @@ class InquirySubmitView(APIView):
     Authenticated: turn the current inquiry cart into real Inquiry records
     (one per product, sharing a batch_id so admins can see them as one
     submission), then clear the cart.
+    
+    Can accept:
+    - items: list of product slugs (will add to cart and submit)
+    - message: optional message text
+    - customer_name, customer_email: ignored (used from authenticated user)
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        # If items are provided in request, add them to cart first
+        items = request.data.get("items", [])
+        if items:
+            for slug in items:
+                product = get_object_or_404(Product, slug=slug)
+                InquiryCartItem.objects.get_or_create(user=request.user, product=product)
+        
         cart_items = list(
             InquiryCartItem.objects.filter(user=request.user).select_related("product")
         )
